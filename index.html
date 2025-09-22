@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <title>Image Animator Shorts</title>
+  <style>
+    body { text-align:center; background:#eee; font-family:sans-serif; }
+    canvas { background:#111; margin-top:20px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <h1>Upload → Animate → Auto Download</h1>
+  <input type="file" id="file" accept="image/*"><br>
+  <canvas id="c" width="540" height="960"></canvas><br>
+
+  <!-- CCapture library -->
+  <script src="https://cdn.jsdelivr.net/npm/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+
+  <script>
+    const fileEl = document.getElementById("file");
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    let img = null, start = null;
+    let capturer, recording = false;
+    const duration = 5000; // 5 seconds
+
+    fileEl.addEventListener("change", e => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+
+      img = new Image();
+      img.onload = () => {
+        start = performance.now();
+        capturer = new CCapture({ format: "webm", framerate: 30 });
+        capturer.start();
+        recording = true;
+        requestAnimationFrame(animate);
+      };
+      img.src = url;
+    });
+
+    function animate(time) {
+      if (!img) return;
+      const elapsed = time - start;
+
+      // simple left-to-right motion
+      const progress = elapsed / duration;
+      const x = -200 + progress * (canvas.width + 200);
+
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, x, canvas.height/3, 300, 300);
+
+      if (recording) capturer.capture(canvas);
+
+      if (elapsed < duration) {
+        requestAnimationFrame(animate);
+      } else {
+        // stop + auto download
+        recording = false;
+        capturer.stop();
+        capturer.save();
+      }
+    }
+  </script>
+</body>
+</html>
